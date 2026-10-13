@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scroll Car Animation</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- GSAP & ScrollTrigger CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #e6e8eb;
+      color: #111827;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Fixed Stage for sticky scroll behavior */
+    .hero-stage {
+      position: sticky;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Dark Horizontal Roadway */
+    .road-track {
+      background-color: #191c20;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 16px 30px -10px rgba(0,0,0,0.25);
+    }
+
+    /* Green unrolling track that reveals the stationary text */
+    .green-fill {
+      background-color: #24d366;
+      will-change: width;
+    }
+
+    /* Bold Stationary Typography inside the Road */
+    .road-text {
+      font-size: clamp(2.2rem, 5.2vw, 4.2rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: #0d1117;
+      white-space: nowrap;
+    }
+
+    /* Metric Cards with Spring Transitions */
+    .metric-card {
+      transition: transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease-out;
+      transform: scale(0.4);
+      opacity: 0;
+      pointer-events: none;
+      transform-origin: center center;
+      will-change: transform, opacity;
+    }
+
+    .metric-card.active {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Headlight Projector Cones */
+    .headlight-beam {
+      background: radial-gradient(
+        ellipse 80% 50% at 0% 50%,
+        rgba(255, 255, 240, 0.95) 0%,
+        rgba(255, 245, 170, 0.55) 25%,
+        rgba(255, 230, 110, 0.22) 55%,
+        rgba(255, 215, 60, 0.05) 80%,
+        transparent 100%
+      );
+      filter: blur(7px);
+      transform-origin: left center;
+    }
+  </style>
+</head>
+<body class="bg-[#e6e8eb]">
+
+  <div class="hero-stage px-4 sm:px-8 md:px-14 lg:px-20">
+
+    <div class="w-full max-w-7xl mx-auto flex flex-col justify-center relative py-6">
+
+      <!-- ================= UPPER ROW: CARDS 1 & 3 ================= -->
+      <div class="w-full grid grid-cols-2 gap-4 md:gap-8 mb-5 md:mb-7">
+        
+        <!-- CARD 1 (Top-Left): 58% Lime Yellow Card -->
+        <div class="flex justify-start pl-2 sm:pl-8 md:pl-16">
+          <div id="card1" class="metric-card bg-[#d8f548] text-neutral-900 rounded-2xl p-5 md:px-7 md:py-6 shadow-xl border border-[#c4e332] min-w-[170px] sm:min-w-[210px] md:min-w-[270px]">
+            <div class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none mb-1.5">
+              58%
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-neutral-800 leading-snug">
+              Increase in pick up point use
+            </p>
+          </div>
+        </div>
+
+        <!-- CARD 3 (Top-Right): 27% Slate Charcoal Card -->
+        <div class="flex justify-end pr-2 sm:pr-8 md:pr-16">
+          <div id="card3" class="metric-card bg-[#3a4149] text-white rounded-2xl p-5 md:px-7 md:py-6 shadow-xl border border-[#48515c] min-w-[170px] sm:min-w-[210px] md:min-w-[270px]">
+            <div class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none mb-1.5 text-white">
+              27%
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-slate-200 leading-snug">
+              Increase in pick up point use
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= HORIZONTAL ROADWAY ================= -->
+      <div id="roadway" class="relative w-full h-28 sm:h-32 md:h-36 road-track rounded-l-full overflow-hidden flex items-center shadow-2xl">
+        
+        <!-- GREEN PROGRESS STRIP (Expands to reveal stationary text) -->
+        <div id="greenStrip" class="absolute top-0 bottom-0 left-0 w-0 green-fill rounded-l-full flex items-center overflow-hidden z-10">
+          <!-- Text is stationary with fixed padding relative to the road -->
+          <div class="pl-6 sm:pl-10 md:pl-14">
+            <span class="road-text">
+              WELCOME ITZFIZZ
+            </span>
+          </div>
+        </div>
+
+        <!-- CAR RIG: Rides precisely on the leading edge of the green reveal -->
+        <div id="carRig" class="absolute top-1/2 -translate-y-1/2 left-0 z-20 will-change-transform pointer-events-none" style="transform: translate(0px, -50%);">
+          
+          <div class="relative flex items-center">
+            
+            <!-- REALISTIC HEADLIGHT PROJECTOR BEAMS (Front Right) -->
+            <div id="lightBeamContainer" class="absolute left-[82%] top-1/2 -translate-y-1/2 w-80 sm:w-96 md:w-[460px] h-36 md:h-44 pointer-events-none z-10 transition-opacity duration-300">
+              <div class="headlight-beam w-full h-full"></div>
+              <!-- Intense Xenon Center Flare -->
+              <div class="absolute left-0 top-1/2 -translate-y-1/2 w-44 sm:w-60 h-14 md:h-18 bg-gradient-to-r from-amber-100/90 via-yellow-200/40 to-transparent blur-sm rounded-full"></div>
+            </div>
+
+            <!-- Soft Road Drop Shadow under the vehicle -->
+            <div class="absolute inset-0 translate-x-2 translate-y-2.5 w-[92%] h-[74%] mx-auto bg-black/65 blur-md rounded-[38px] z-0"></div>
+
+            <!-- ================= EXACT TOP-DOWN FERRARI RED SUPERCAR SVG ================= -->
+            <svg id="carSvg" class="relative z-10 w-[240px] sm:w-[285px] md:w-[330px] h-auto drop-shadow-[0_12px_22px_rgba(0,0,0,0.55)]" viewBox="0 0 600 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+              
+              <defs>
+                <!-- FERRARI ROSSO CORSA PRIMARY GRADIENT -->
+                <linearGradient id="bodyPrimaryGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+                  <stop offset="0%" stop-color="#991b1b"/>
+                  <stop offset="35%" stop-color="#dc2626"/>
+                  <stop offset="70%" stop-color="#ef4444"/>
+                  <stop offset="100%" stop-color="#b91c1c"/>
+                </linearGradient>
+
+                <!-- FERRARI BODY CONTOUR SHADING GRADIENT -->
+                <linearGradient id="bodyShadowGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                  <stop offset="0%" stop-color="#7f1d1d"/>
+                  <stop offset="25%" stop-color="#b91c1c"/>
+                  <stop offset="50%" stop-color="#dc2626"/>
+                  <stop offset="75%" stop-color="#b91c1c"/>
+                  <stop offset="100%" stop-color="#7f1d1d"/>
+                </linearGradient>
+
+                <!-- Glass Windshield Gradient with Authentic Reflection Lines -->
+                <linearGradient id="windshieldGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+                  <stop offset="0%" stop-color="#2d333b"/>
+                  <stop offset="45%" stop-color="#4f5763"/>
+                  <stop offset="75%" stop-color="#707987"/>
+                  <stop offset="100%" stop-color="#2a3038"/>
+                </linearGradient>
+
+                <!-- Carbon Fiber Material -->
+                <linearGradient id="carbonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#16181b"/>
+                  <stop offset="50%" stop-color="#23272d"/>
+                  <stop offset="100%" stop-color="#141518"/>
+                </linearGradient>
+
+                <!-- Xenon Headlight Bulb Glow -->
+                <radialGradient id="xenonGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="60%" stop-color="#fff5b8"/>
+                  <stop offset="100%" stop-color="#f59e0b"/>
+                </radialGradient>
+              </defs>
+
+              <!-- 1. CURVED REAR CARBON SPOILER -->
+              <path d="M 62 42 C 34 78, 12 110, 12 135 C 12 160, 34 192, 62 228 C 42 208, 26 172, 26 135 C 26 98, 42 62, 62 42 Z" fill="url(#carbonGrad)" stroke="#111315" stroke-width="2.5" />
+              <!-- Spoiler Wing Tips -->
+              <path d="M 58 40 C 70 42, 75 52, 62 58 Z" fill="#1b1e22"/>
+              <path d="M 58 230 C 70 228, 75 218, 62 212 Z" fill="#1b1e22"/>
+
+              <!-- 2. MAIN SCULPTED CAR BODY -->
+              <path d="M 72 56 
+                       C 110 50, 160 52, 205 60
+                       C 235 66, 255 72, 280 72
+                       C 320 72, 360 62, 400 56
+                       C 455 50, 495 62, 540 92
+                       C 560 106, 568 120, 568 135
+                       C 568 150, 560 164, 540 178
+                       C 495 208, 455 220, 400 214
+                       C 360 208, 320 198, 280 198
+                       C 255 198, 235 204, 205 210
+                       C 160 218, 110 220, 72 214
+                       C 60 195, 54 165, 54 135
+                       C 54 105, 60 75, 72 56 Z" 
+                    fill="url(#bodyShadowGrad)" stroke="#7f1d1d" stroke-width="1.8" id="carBodyBase"/>
+
+              <!-- 3. AERODYNAMIC SIDE MIRRORS -->
+              <!-- Top Mirror -->
+              <path d="M 352 74 L 335 40 L 360 40 Z" fill="#1b1e22"/>
+              <path d="M 334 38 C 342 36, 364 36, 375 44 C 365 48, 342 46, 334 38 Z" fill="url(#bodyPrimaryGrad)" stroke="#1a1c1f" stroke-width="1"/>
+              <!-- Bottom Mirror -->
+              <path d="M 352 196 L 335 230 L 360 230 Z" fill="#1b1e22"/>
+              <path d="M 334 232 C 342 234, 364 234, 375 226 C 365 222, 342 224, 334 232 Z" fill="url(#bodyPrimaryGrad)" stroke="#1a1c1f" stroke-width="1"/>
+
+              <!-- 4. SIDE AIR INTAKE TUNNELS & DOOR CREASES -->
+              <!-- Top Door Scoop -->
+              <path d="M 185 70 C 240 76, 275 80, 310 82" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
+              <path d="M 180 72 C 220 84, 245 88, 260 88" stroke="#1f2328" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <!-- Bottom Door Scoop -->
+              <path d="M 185 200 C 240 194, 275 190, 310 188" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
+              <path d="M 180 198 C 220 186, 245 182, 260 182" stroke="#1f2328" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+              <!-- 5. TEARDROP COCKPIT & CARBON ROOF SURROUND -->
+              <path d="M 76 135 
+                       C 95 90, 150 82, 220 82 
+                       C 320 82, 360 84, 435 110
+                       C 455 118, 462 126, 462 135
+                       C 462 144, 455 152, 435 160
+                       C 360 186, 320 188, 220 188
+                       C 150 188, 95 180, 76 135 Z" 
+                    fill="url(#carbonGrad)" stroke="#111315" stroke-width="2"/>
+
+              <!-- 6. REAR ENGINE LOUVERS & COOLING SLATS -->
+              <path d="M 88 135 C 102 110, 130 102, 160 102 C 145 120, 145 150, 160 168 C 130 168, 102 160, 88 135 Z" fill="#121417"/>
+              <line x1="102" y1="124" x2="102" y2="146" stroke="#252a30" stroke-width="3" stroke-linecap="round"/>
+              <line x1="116" y1="118" x2="116" y2="152" stroke="#252a30" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="130" y1="114" x2="130" y2="156" stroke="#252a30" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="144" y1="110" x2="144" y2="160" stroke="#252a30" stroke-width="3.5" stroke-linecap="round"/>
+
+              <!-- Engine Deck Dual Air Intakes -->
+              <path d="M 160 96 C 185 96, 215 100, 240 105 L 235 116 C 205 112, 180 110, 160 110 Z" fill="#14171a"/>
+              <path d="M 160 174 C 185 174, 215 170, 240 165 L 235 154 C 205 158, 180 160, 160 160 Z" fill="#14171a"/>
+
+              <!-- 7. CURVED GLASS WINDSHIELD -->
+              <path d="M 330 92 
+                       C 380 94, 420 110, 452 135 
+                       C 420 160, 380 176, 330 178
+                       C 345 150, 345 120, 330 92 Z" 
+                    fill="url(#windshieldGrad)" stroke="#1a1d22" stroke-width="1.8"/>
+
+              <!-- Windshield Interior Glass Reflection Highlights -->
+              <path d="M 350 102 C 388 108, 412 120, 436 135 C 418 126, 385 116, 350 112 Z" fill="rgba(255, 255, 255, 0.22)"/>
+              <path d="M 355 122 C 390 125, 415 130, 442 135 C 420 133, 390 130, 355 128 Z" fill="rgba(255, 255, 255, 0.35)"/>
+
+              <!-- Windshield Wiper -->
+              <line x1="340" y1="148" x2="422" y2="128" stroke="#121417" stroke-width="3" stroke-linecap="round"/>
+              <line x1="422" y1="128" x2="440" y2="135" stroke="#121417" stroke-width="2" stroke-linecap="round"/>
+
+              <!-- 8. BONNET HEAT EXTRACTOR SLITS -->
+              <path d="M 465 98 C 485 106, 510 120, 520 126 L 514 130 C 502 122, 478 110, 460 104 Z" fill="#141619" stroke="#7f1d1d" stroke-width="1.2"/>
+              <path d="M 465 172 C 485 164, 510 150, 520 144 L 514 140 C 502 148, 478 160, 460 166 Z" fill="#141619" stroke="#7f1d1d" stroke-width="1.2"/>
+
+              <!-- 9. SLEEK HIGH-PERFORMANCE HEADLIGHTS -->
+              <path d="M 526 84 C 542 94, 552 108, 556 114 C 550 110, 538 98, 522 92 Z" fill="#121417"/>
+              <circle cx="546" cy="104" r="3.5" fill="url(#xenonGlow)"/>
+              <path d="M 526 186 C 542 176, 552 162, 556 156 C 550 160, 538 172, 522 178 Z" fill="#121417"/>
+              <circle cx="546" cy="166" r="3.5" fill="url(#xenonGlow)"/>
+
+              <!-- 10. FRONT NOSE RACING CREST -->
+              <path d="M 552 135 L 544 130 L 544 140 Z" fill="#facc15" stroke="#854d0e" stroke-width="0.8"/>
+            </svg>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= LOWER ROW: CARDS 2 & 4 ================= -->
+      <div class="w-full grid grid-cols-2 gap-4 md:gap-8 mt-5 md:mt-7">
+        
+        <!-- CARD 2 (Bottom-Left): 23% Soft Baby Blue Card -->
+        <div class="flex justify-start pl-2 sm:pl-8 md:pl-16">
+          <div id="card2" class="metric-card bg-[#cde4f7] text-neutral-900 rounded-2xl p-5 md:px-7 md:py-6 shadow-xl border border-[#b8daf5] min-w-[170px] sm:min-w-[210px] md:min-w-[270px]">
+            <div class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none mb-1.5">
+              23%
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-neutral-800 leading-snug">
+              Decreased in customer phone calls
+            </p>
+          </div>
+        </div>
+
+        <!-- CARD 4 (Bottom-Right): 40% Coral Salmon Card -->
+        <div class="flex justify-end pr-2 sm:pr-8 md:pr-16">
+          <div id="card4" class="metric-card bg-[#f47b66] text-white rounded-2xl p-5 md:px-7 md:py-6 shadow-xl border border-[#ee6851] min-w-[170px] sm:min-w-[210px] md:min-w-[270px]">
+            <div class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none mb-1.5 text-white">
+              40%
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-rose-50 leading-snug">
+              Decreased in customer phone calls
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Scroll Height Spacer: Reduced from 380vh to 135vh for fast, responsive car movement -->
+  <div class="h-[135vh] w-full pointer-events-none"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // DOM Elements
+      const roadway = document.getElementById("roadway");
+      const greenStrip = document.getElementById("greenStrip");
+      const carRig = document.getElementById("carRig");
+
+      const card1 = document.getElementById("card1");
+      const card2 = document.getElementById("card2");
+      const card3 = document.getElementById("card3");
+      const card4 = document.getElementById("card4");
+
+      // ==============================================
+      // SCROLL-BASED DRIVE & POP-UP INTERACTION LOGIC
+      // ==============================================
+      let currentProgress = 0;
+
+      function updateCarPosition(progress) {
+        currentProgress = progress;
+
+        const roadWidth = roadway.offsetWidth;
+        const rigWidth = carRig.offsetWidth || 300;
+
+        // Maximum horizontal travel distance for the car
+        const maxTravel = Math.max(0, roadWidth - rigWidth);
+        const carX = progress * maxTravel;
+
+        // Move the car smoothly
+        carRig.style.transform = `translate(${carX}px, -50%)`;
+
+        // The green track unrolls directly behind the car
+        const greenWidth = Math.max(0, carX + (rigWidth * 0.38));
+        greenStrip.style.width = `${greenWidth}px`;
+
+        // ==============================================
+        // PRECISE METRIC CARD POP-UPS (Matching Demo Video)
+        // ==============================================
+        // Card 1 (58% Lime): pops at ~15%
+        if (progress >= 0.15) {
+          card1.classList.add("active");
+        } else {
+          card1.classList.remove("active");
+        }
+
+        // Card 2 (23% Blue): pops at ~32%
+        if (progress >= 0.32) {
+          card2.classList.add("active");
+        } else {
+          card2.classList.remove("active");
+        }
+
+        // Card 3 (27% Dark Charcoal): pops at ~55%
+        if (progress >= 0.55) {
+          card3.classList.add("active");
+        } else {
+          card3.classList.remove("active");
+        }
+
+        // Card 4 (40% Coral Salmon): pops at ~75%
+        if (progress >= 0.75) {
+          card4.classList.add("active");
+        } else {
+          card4.classList.remove("active");
+        }
+      }
+
+      // Primary ScrollTrigger tied to natural page scrolling with tighter scrub for fast response
+      const trigger = ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        scrub: 0.12, // Faster, snappy response without sluggish lag
+        onUpdate: (self) => {
+          updateCarPosition(self.progress);
+        }
+      });
+
+      // MouseWheel fallback with boosted sensitivity for effortless driving
+      let virtualScroll = 0;
+      const maxVirtual = 700; // Decreased from 2800 for ~4x faster driving speed
+      window.addEventListener("wheel", (e) => {
+        if (document.documentElement.scrollHeight <= window.innerHeight + 60) {
+          e.preventDefault();
+          virtualScroll += e.deltaY * 1.8;
+          virtualScroll = Math.max(0, Math.min(virtualScroll, maxVirtual));
+          updateCarPosition(virtualScroll / maxVirtual);
+        }
+      }, { passive: false });
+
+      // Touch swipe support for fast mobile/trackpad gestures
+      let touchStartY = 0;
+      window.addEventListener("touchstart", (e) => {
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      window.addEventListener("touchmove", (e) => {
+        if (document.documentElement.scrollHeight <= window.innerHeight + 60) {
+          const touchDelta = (touchStartY - e.touches[0].clientY) * 2.2;
+          virtualScroll += touchDelta;
+          virtualScroll = Math.max(0, Math.min(virtualScroll, maxVirtual));
+          updateCarPosition(virtualScroll / maxVirtual);
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      // Resize listener
+      window.addEventListener("resize", () => {
+        ScrollTrigger.refresh();
+        updateCarPosition(trigger ? trigger.progress : currentProgress);
+      });
+
+      // Initialize at zero
+      updateCarPosition(0);
+    });
+  </script>
+</body>
+</html>
